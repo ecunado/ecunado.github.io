@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>App Redirection</title>
+</head>
+<body>
+  
+  <!-- iframe used for attempting to load a custom protocol -->
+  <iframe style="display:none" height="0" width="0" id="loader"></iframe>
+
+  <script>
+	(function(){
+		var url = 'tel://34669048015';
+		window.open(url);
+  	})();
+  </script>
+</body>
+</html>
