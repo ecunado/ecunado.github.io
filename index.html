@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clicklist — The Live Musician's Metronome</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0A0A0F;
+      --surface:  #141420;
+      --raised:   #1C1C2A;
+      --accent:   #6C63FF;
+      --hot:      #FF3B6B;
+      --text:     #F0F0F8;
+      --muted:    #888899;
+      --border:   #2A2A3E;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Barlow Condensed', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ─────────────────────────────────────────── */
+    nav {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 48px;
+      background: linear-gradient(to bottom, rgba(10,10,15,0.97) 60%, transparent);
+    }
+
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      letter-spacing: 5px;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .logo em { color: var(--accent); font-style: normal; }
+
+    .nav-badge {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 13px;
+      letter-spacing: 1.5px;
+    }
+
+    /* ── HERO ────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+      padding: 120px 48px 80px;
+    }
+
+    /* Scanline grid */
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    /* Noise grain */
+    .hero::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0.35;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+      pointer-events: none;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0;
+    }
+
+    /* Ambient glow behind beat circle */
+    .glow-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(108,99,255,0.10) 0%, transparent 65%);
+      pointer-events: none;
+      transition: background 0.15s;
+    }
+    .glow-ring.hot { background: radial-gradient(circle, rgba(255,59,107,0.14) 0%, transparent 65%); }
+
+    /* Song meta */
+    .hero-now {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 4px;
+      color: var(--hot);
+      margin-bottom: 10px;
+      opacity: 0.85;
+    }
+
+    .hero-song {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(52px, 9vw, 108px);
+      letter-spacing: 3px;
+      line-height: 0.9;
+      margin-bottom: 10px;
+      transition: opacity 0.4s;
+    }
+
+    .hero-artist {
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--muted);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 52px;
+      transition: opacity 0.4s;
+    }
+
+    /* Beat circle */
+    .beat-circle {
+      width: 190px;
+      height: 190px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.015);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .beat-circle.beat-accent  { animation: pulse-accent  0.13s ease-out; }
+    .beat-circle.beat-hot     { animation: pulse-hot     0.16s ease-out; }
+
+    @keyframes pulse-accent {
+      0%   { border-color: var(--accent); background: rgba(108,99,255,0.09); box-shadow: 0 0 35px rgba(108,99,255,0.35); }
+      100% { border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.015); box-shadow: none; }
+    }
+    @keyframes pulse-hot {
+      0%   { border-color: var(--hot); background: rgba(255,59,107,0.10); box-shadow: 0 0 50px rgba(255,59,107,0.45), 0 0 100px rgba(255,59,107,0.12); }
+      100% { border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.015); box-shadow: none; }
+    }
+
+    .bpm-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 76px;
+      line-height: 1;
+      letter-spacing: 2px;
+    }
+
+    .bpm-unit {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 5px;
+    }
+
+    /* BPM controls */
+    .bpm-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .bpm-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
+      font-size: 16px;
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .bpm-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .bpm-hint {
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--border);
+      text-transform: uppercase;
+    }
+
+    /* Beat dots */
+    .beat-dots {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 56px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background 0.05s, transform 0.05s, box-shadow 0.05s;
+    }
+    .dot.on        { background: var(--accent); transform: scale(1.5); box-shadow: 0 0 12px var(--accent); }
+    .dot.on.down   { background: var(--hot);    transform: scale(1.7); box-shadow: 0 0 18px var(--hot); }
+
+    /* Tagline */
+    .hero-tagline {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(16px, 2.5vw, 28px);
+      letter-spacing: 10px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .hero-sub {
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+      max-width: 440px;
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+
+    /* CTAs */
+    .cta-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      padding: 15px 38px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-primary:hover {
+      background: #8078ff;
+      transform: translateY(-3px);
+      box-shadow: 0 10px 32px rgba(108,99,255,0.45);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      padding: 15px 38px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .btn-ghost:hover { border-color: var(--muted); transform: translateY(-3px); }
+
+    /* Scroll arrow */
+    .scroll-arrow {
+      position: absolute;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      color: var(--border);
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      animation: float 2.5s ease-in-out infinite;
+      z-index: 1;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50%       { transform: translateX(-50%) translateY(7px); }
+    }
+
+    /* ── FEATURES ────────────────────────────────────── */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border-top: 1px solid var(--border);
+    }
+
+    .feat {
+      background: var(--bg);
+      padding: 48px 36px;
+      transition: background 0.2s;
+    }
+    .feat:hover { background: var(--surface); }
+
+    .feat-icon {
+      font-size: 30px;
+      margin-bottom: 18px;
+      display: block;
+    }
+
+    .feat-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+    }
+
+    .feat-desc {
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── SECTION LABEL ───────────────────────────────── */
+    .label {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 4px;
+      color: var(--accent);
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 16px;
+    }
+
+    /* ── SCREENSHOTS ─────────────────────────────────── */
+    .screens-section {
+      padding: 120px 48px;
+      background: var(--surface);
+      overflow: hidden;
+    }
+
+    .screens-head {
+      text-align: center;
+      margin-bottom: 90px;
+    }
+
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(40px, 7vw, 80px);
+      letter-spacing: 4px;
+      line-height: 1;
+    }
+
+    .phones {
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .phone-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .phone {
+      width: 210px;
+      aspect-ratio: 393/852;
+      border-radius: 40px;
+      border: 2px solid rgba(255,255,255,0.13);
+      overflow: hidden;
+      background: #000;
+      box-shadow:
+        0 0 0 1px rgba(0,0,0,0.6),
+        0 40px 80px rgba(0,0,0,0.65),
+        inset 0 0 0 1px rgba(255,255,255,0.04);
+      position: relative;
+      transition: transform 0.35s ease, box-shadow 0.35s ease;
+    }
+    .phone:hover {
+      transform: translateY(-10px) scale(1.025);
+      box-shadow:
+        0 0 0 1px rgba(0,0,0,0.6),
+        0 60px 100px rgba(0,0,0,0.75),
+        inset 0 0 0 1px rgba(255,255,255,0.04);
+    }
+
+    /* Dynamic island */
+    .phone::after {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 96px;
+      height: 30px;
+      background: #000;
+      border-radius: 20px;
+      z-index: 2;
+    }
+
+    .phone img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+      display: block;
+    }
+
+    /* Centre phone elevated with accent glow */
+    .phone-wrap:nth-child(2) .phone {
+      transform: translateY(-24px);
+      box-shadow:
+        0 0 0 1px rgba(0,0,0,0.6),
+        0 60px 100px rgba(0,0,0,0.75),
+        0 0 60px rgba(108,99,255,0.18),
+        inset 0 0 0 1px rgba(255,255,255,0.04);
+    }
+    .phone-wrap:nth-child(2) .phone:hover {
+      transform: translateY(-34px) scale(1.025);
+    }
+
+    .phone-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 17px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .phone-caption {
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--muted);
+      text-align: center;
+      max-width: 180px;
+      line-height: 1.5;
+      opacity: 0.65;
+    }
+
+    /* ── PERFORMANCE SPOTLIGHT ───────────────────────── */
+    .perf-section {
+      padding: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    @media (max-width: 860px) {
+      .perf-section { grid-template-columns: 1fr; }
+      .perf-visual  { display: none; }
+    }
+
+    .perf-text {
+      padding: 100px 72px;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .perf-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(44px, 5vw, 68px);
+      letter-spacing: 3px;
+      line-height: 1.0;
+      margin-bottom: 24px;
+    }
+    .perf-title .hot { color: var(--hot); }
+
+    .perf-body {
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--muted);
+      line-height: 1.75;
+      margin-bottom: 40px;
+    }
+
+    .checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .check {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      font-size: 17px;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      line-height: 1.4;
+    }
+
+    .check-mark {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: rgba(108,99,255,0.15);
+      border: 1px solid var(--accent);
+      display: grid;
+      place-items: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 9px;
+      color: var(--accent);
+      margin-top: 1px;
+    }
+
+    /* Live perf mockup */
+    .perf-visual {
+      background: var(--surface);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 72px 64px;
+    }
+
+    .perf-card {
+      background: var(--raised);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 340px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .perf-card::before {
+      content: '';
+      position: absolute;
+      top: -60px; left: -60px;
+      width: 200px; height: 200px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(108,99,255,0.07), transparent 70%);
+      pointer-events: none;
+    }
+
+    .pcard-count {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-align: right;
+      margin-bottom: 28px;
+    }
+
+    .pcard-song {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 42px;
+      letter-spacing: 2px;
+      text-align: center;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .pcard-artist {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--muted);
+      letter-spacing: 2.5px;
+      text-align: center;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .pcard-next {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      text-align: center;
+      margin-bottom: 36px;
+      letter-spacing: 1px;
+    }
+    .pcard-next .nl { color: var(--hot); }
+    .pcard-next .nt { color: var(--muted); }
+
+    .pcard-ring {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.02);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .pcard-ring.ring-on    { animation: ring-accent 0.13s ease-out; }
+    .pcard-ring.ring-down  { animation: ring-hot    0.16s ease-out; }
+
+    @keyframes ring-accent {
+      0%   { border-color: var(--accent); box-shadow: 0 0 24px rgba(108,99,255,0.4); }
+      100% { border-color: rgba(255,255,255,0.1); box-shadow: none; }
+    }
+    @keyframes ring-hot {
+      0%   { border-color: var(--hot); box-shadow: 0 0 36px rgba(255,59,107,0.5); }
+      100% { border-color: rgba(255,255,255,0.1); box-shadow: none; }
+    }
+
+    .pcard-bpm {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 52px;
+      line-height: 1;
+    }
+    .pcard-bpm-u {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 4px;
+    }
+
+    .pcard-dots {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .pdot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background 0.05s, transform 0.05s, box-shadow 0.05s;
+    }
+    .pdot.on      { background: var(--accent); transform: scale(1.5); box-shadow: 0 0 10px var(--accent); }
+    .pdot.on.down { background: var(--hot);    transform: scale(1.7); box-shadow: 0 0 14px var(--hot); }
+
+    .pcard-nav {
+      display: flex;
+      justify-content: space-between;
+    }
+    .pcard-nav span {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 14px;
+      letter-spacing: 2px;
+      color: var(--muted);
+    }
+
+    /* ── STATS ───────────────────────────────────────── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 640px) {
+      .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .stat {
+      padding: 64px 40px;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    .stat:last-child { border-right: none; }
+
+    .stat-n {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 60px;
+      letter-spacing: 2px;
+      color: var(--accent);
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+    .stat-l {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    /* ── CTA FINAL ───────────────────────────────────── */
+    .cta-final {
+      padding: 140px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-final::before {
+      content: '';
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 900px; height: 500px;
+      background: radial-gradient(ellipse, rgba(108,99,255,0.09) 0%, transparent 65%);
+      pointer-events: none;
+    }
+
+    .cta-big {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(56px, 10vw, 120px);
+      letter-spacing: 6px;
+      line-height: 1;
+      margin-bottom: 24px;
+      position: relative;
+    }
+    .cta-big .a { color: var(--accent); }
+
+    .cta-p {
+      font-size: 19px;
+      font-weight: 400;
+      color: var(--muted);
+      margin-bottom: 52px;
+      max-width: 420px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+      position: relative;
+    }
+
+    .email-row {
+      display: flex;
+      max-width: 420px;
+      margin: 0 auto;
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s;
+    }
+    .email-row:focus-within { border-color: var(--accent); }
+
+    .email-row input {
+      flex: 1;
+      background: var(--surface);
+      border: none;
+      padding: 16px 22px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px;
+      color: var(--text);
+      outline: none;
+    }
+    .email-row input::placeholder { color: var(--muted); }
+
+    .email-row button {
+      background: var(--accent);
+      border: none;
+      padding: 16px 28px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #fff;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: background 0.2s;
+    }
+    .email-row button:hover { background: #8078ff; }
+
+    /* ── FOOTER ──────────────────────────────────────── */
+    footer {
+      padding: 36px 48px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 20px;
+      letter-spacing: 5px;
+      color: var(--border);
+    }
+
+    .footer-v {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      color: var(--border);
+      letter-spacing: 2px;
+    }
+
+    /* ── FADE-UP ON SCROLL ───────────────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.65s ease, transform 0.65s ease;
+    }
+    .reveal.in {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal:nth-child(2) { transition-delay: 0.1s; }
+    .reveal:nth-child(3) { transition-delay: 0.2s; }
+    .reveal:nth-child(4) { transition-delay: 0.3s; }
+    .reveal:nth-child(5) { transition-delay: 0.4s; }
+
+    /* ── RESPONSIVE ──────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav { padding: 18px 24px; }
+      .hero { padding: 110px 24px 70px; }
+      .feat { padding: 36px 24px; }
+      .screens-section { padding: 80px 24px; }
+      .perf-text { padding: 72px 28px; }
+      .stats .stat { padding: 48px 20px; }
+      footer { padding: 28px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav>
+    <a class="logo" href="#">CLICK<em>LIST</em></a>
+    <span class="nav-badge">v0.1.0 · COMING SOON</span>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="glow-ring" id="glow"></div>
+
+    <div class="hero-inner">
+      <span class="hero-now">▶ NOW PLAYING</span>
+      <h1 class="hero-song" id="hSong">HOLD THE LINE</h1>
+      <p class="hero-artist" id="hArtist">Toto</p>
+
+      <div class="beat-circle" id="circle">
+        <span class="bpm-number" id="hBpm">95</span>
+        <span class="bpm-unit">BPM</span>
+      </div>
+
+      <div class="bpm-row">
+        <button class="bpm-btn" id="bDown">−</button>
+        <span class="bpm-hint">adjust tempo</span>
+        <button class="bpm-btn" id="bUp">+</button>
+      </div>
+
+      <div class="beat-dots" id="hDots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+
+      <p class="hero-tagline">YOUR TEMPO. YOUR SETLIST. YOUR STAGE.</p>
+      <p class="hero-sub">The precision metronome built for musicians who play live. Reliable timing, setlist management, and a stage-ready performance mode.</p>
+
+      <div class="cta-row">
+        <a href="#notify" class="btn-primary">Get Early Access</a>
+        <a href="#screenshots" class="btn-ghost">See the App</a>
+      </div>
+    </div>
+
+    <div class="scroll-arrow">SCROLL ↓</div>
+  </section>
+
+  <!-- FEATURES -->
+  <div class="features">
+    <div class="feat reveal">
+      <span class="feat-icon">🎚️</span>
+      <div class="feat-name">Drift-Free Timing</div>
+      <p class="feat-desc">Absolute-time scheduling with per-tick drift correction. The beat never wanders, even under load.</p>
+    </div>
+    <div class="feat reveal">
+      <span class="feat-icon">🥁</span>
+      <div class="feat-name">Time Signatures</div>
+      <p class="feat-desc">4/4, 3/4, 6/8 and beyond. Downbeats hit different — visually and acoustically accented.</p>
+    </div>
+    <div class="feat reveal">
+      <span class="feat-icon">📋</span>
+      <div class="feat-name">Setlist Manager</div>
+      <p class="feat-desc">Build your show before you play. Drag to reorder, set individual BPMs per song, hit START.</p>
+    </div>
+    <div class="feat reveal">
+      <span class="feat-icon">🎤</span>
+      <div class="feat-name">Performance Mode</div>
+      <p class="feat-desc">Auto-plays on advance. Bold readability from across the stage in any lighting condition.</p>
+    </div>
+    <div class="feat reveal">
+      <span class="feat-icon">🌙</span>
+      <div class="feat-name">Stage-First Design</div>
+      <p class="feat-desc">Pure dark mode with high-contrast visuals. No distractions between you and the next beat.</p>
+    </div>
+  </div>
+
+  <!-- SCREENSHOTS -->
+  <section class="screens-section" id="screenshots">
+    <div class="screens-head">
+      <span class="label">Inside the app</span>
+      <h2 class="section-title">EVERY TOOL<br>YOU NEED ON STAGE</h2>
+    </div>
+
+    <div class="phones">
+      <div class="phone-wrap reveal">
+        <div class="phone">
+          <img src="songs.png" alt="Song library">
+        </div>
+        <div class="phone-label">SONG LIBRARY</div>
+        <p class="phone-caption">Every song with its BPM and time signature. Tap to load instantly.</p>
+      </div>
+
+      <div class="phone-wrap reveal">
+        <div class="phone">
+          <img src="performance_mode.png" alt="Performance Mode">
+        </div>
+        <div class="phone-label">PERFORMANCE MODE</div>
+        <p class="phone-caption">The beat. The song. Nothing else. Designed for darkness and pressure.</p>
+      </div>
+
+      <div class="phone-wrap reveal">
+        <div class="phone">
+          <img src="setlist.png" alt="Setlists">
+        </div>
+        <div class="phone-label">SETLISTS</div>
+        <p class="phone-caption">Plan your show, drag to reorder, then hit START.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PERFORMANCE SPOTLIGHT -->
+  <section class="perf-section">
+    <div class="perf-text">
+      <span class="label">Performance Mode</span>
+      <h2 class="perf-title">BUILT FOR<br><span class="hot">THE STAGE</span></h2>
+      <p class="perf-body">When the lights go down and the crowd is waiting, your tools need to be invisible. Performance Mode puts the only two things that matter front and center: the beat and what's next.</p>
+      <div class="checklist">
+        <div class="check"><span class="check-mark">✓</span>Auto-plays when you advance to the next song</div>
+        <div class="check"><span class="check-mark">✓</span>Shows the next song so you're always one step ahead</div>
+        <div class="check"><span class="check-mark">✓</span>Screen stays on during the full performance</div>
+        <div class="check"><span class="check-mark">✓</span>Bold typography readable across any stage</div>
+        <div class="check"><span class="check-mark">✓</span>Drift-corrected timing that never wavers</div>
+      </div>
+    </div>
+
+    <div class="perf-visual">
+      <div class="perf-card">
+        <div class="pcard-count">1 / 16</div>
+        <div class="pcard-song" id="pcSong">HOLD THE LINE</div>
+        <div class="pcard-artist" id="pcArtist">Toto</div>
+        <div class="pcard-next">
+          <span class="nl">NEXT </span>
+          <span class="nt" id="pcNext">EYE OF THE TIGER</span>
+        </div>
+        <div class="pcard-ring" id="pRing">
+          <span class="pcard-bpm" id="pcBpm">95</span>
+          <span class="pcard-bpm-u">BPM</span>
+        </div>
+        <div class="pcard-dots" id="pDots">
+          <div class="pdot"></div>
+          <div class="pdot"></div>
+          <div class="pdot"></div>
+          <div class="pdot"></div>
+        </div>
+        <div class="pcard-nav">
+          <span>‹ PREV</span>
+          <span>NEXT ›</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="stat reveal">
+      <div class="stat-n">iOS</div>
+      <div class="stat-l">&amp; Android</div>
+    </div>
+    <div class="stat reveal">
+      <div class="stat-n">∞</div>
+      <div class="stat-l">Songs &amp; Setlists</div>
+    </div>
+    <div class="stat reveal">
+      <div class="stat-n">0</div>
+      <div class="stat-l">Drift. Ever.</div>
+    </div>
+    <div class="stat reveal">
+      <div class="stat-n">FREE</div>
+      <div class="stat-l">To Download</div>
+    </div>
+  </div>
+
+  <!-- CTA FINAL -->
+  <section class="cta-final" id="notify">
+    <span class="label" style="text-align:center;display:block;">Ready to perform?</span>
+    <h2 class="cta-big">KEEP THE<br><span class="a">BEAT</span></h2>
+    <p class="cta-p">Clicklist is coming to iOS and Android. Be the first to know when it drops.</p>
+    <form class="email-row" id="notifyForm"
+          action="https://formspree.io/f/TU_ID_AQUI"
+          method="POST">
+      <input type="email" name="email" id="emailInput" placeholder="your@email.com" required>
+      <button type="submit" id="notifyBtn">Notify Me</button>
+    </form>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-logo">CLICKLIST</div>
+    <div class="footer-v">v0.1.0 — MVP FOUNDATION · 2026</div>
+  </footer>
+
+  <script>
+    // ── Beat Engine ──────────────────────────────────────
+    const SONGS = [
+      { title: 'HOLD THE LINE',      artist: 'Toto',             bpm: 95,  next: 'EYE OF THE TIGER' },
+      { title: 'EYE OF THE TIGER',   artist: 'Survivor',         bpm: 108, next: 'BEAT IT' },
+      { title: 'BEAT IT',            artist: 'Michael Jackson',  bpm: 136, next: "DON'T STOP BELIEVIN'" },
+      { title: "DON'T STOP BELIEVIN'", artist: 'Journey',        bpm: 118, next: 'SUMMER OF 69' },
+      { title: 'SUMMER OF 69',       artist: 'Bryan Adams',      bpm: 142, next: 'HOLD THE LINE' },
+    ];
+
+    let bpm          = 95;
+    let beat         = 0;
+    let songIdx      = 0;
+    let ticker       = null;
+    const BEATS      = 4;
+
+    // Elements
+    const circle  = document.getElementById('circle');
+    const hBpm    = document.getElementById('hBpm');
+    const hSong   = document.getElementById('hSong');
+    const hArtist = document.getElementById('hArtist');
+    const hDots   = document.querySelectorAll('#hDots .dot');
+    const glow    = document.getElementById('glow');
+
+    const pRing   = document.getElementById('pRing');
+    const pcBpm   = document.getElementById('pcBpm');
+    const pcSong  = document.getElementById('pcSong');
+    const pcArtist= document.getElementById('pcArtist');
+    const pcNext  = document.getElementById('pcNext');
+    const pDots   = document.querySelectorAll('#pDots .pdot');
+
+    function flash(el, cls) {
+      el.classList.remove('beat-accent', 'beat-hot', 'ring-on', 'ring-down');
+      void el.offsetWidth; // reflow
+      el.classList.add(cls);
+    }
+
+    function tick() {
+      beat = (beat % BEATS) + 1;
+      const down = beat === 1;
+
+      // Hero circle
+      flash(circle, down ? 'beat-hot' : 'beat-accent');
+
+      // Hero dots
+      hDots.forEach((d, i) => {
+        d.classList.toggle('on',   i === beat - 1);
+        d.classList.toggle('down', i === beat - 1 && down);
+      });
+
+      // Glow
+      if (down) {
+        glow.classList.add('hot');
+        setTimeout(() => glow.classList.remove('hot'), 200);
+      }
+
+      // Perf card ring
+      flash(pRing, down ? 'ring-down' : 'ring-on');
+
+      // Perf card dots
+      pDots.forEach((d, i) => {
+        d.classList.toggle('on',   i === beat - 1);
+        d.classList.toggle('down', i === beat - 1 && down);
+      });
+    }
+
+    function startTicker() {
+      clearInterval(ticker);
+      const ms = (60 / bpm) * 1000;
+      beat = 0;
+      hBpm.textContent  = bpm;
+      pcBpm.textContent = bpm;
+      tick();
+      ticker = setInterval(tick, ms);
+    }
+
+    function loadSong(idx) {
+      const s = SONGS[idx];
+      bpm = s.bpm;
+
+      // Fade out/in text
+      [hSong, hArtist].forEach(el => { el.style.opacity = '0'; });
+      setTimeout(() => {
+        hSong.textContent   = s.title;
+        hArtist.textContent = s.artist;
+        pcSong.textContent  = s.title;
+        pcArtist.textContent = s.artist;
+        pcNext.textContent  = s.next;
+        [hSong, hArtist].forEach(el => { el.style.opacity = '1'; });
+      }, 300);
+
+      startTicker();
+    }
+
+    // BPM buttons
+    document.getElementById('bUp').addEventListener('click', () => {
+      bpm = Math.min(240, bpm + 5);
+      startTicker();
+    });
+    document.getElementById('bDown').addEventListener('click', () => {
+      bpm = Math.max(40, bpm - 5);
+      startTicker();
+    });
+
+    // Auto-cycle songs every ~9 seconds
+    setInterval(() => {
+      songIdx = (songIdx + 1) % SONGS.length;
+      loadSong(songIdx);
+    }, 9000);
+
+    // Kick off
+    startTicker();
+
+    // ── Scroll reveal ────────────────────────────────────
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    // ── Email signup ─────────────────────────────────────
+    document.getElementById('notifyForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const inp  = document.getElementById('emailInput');
+      const btn  = document.getElementById('notifyBtn');
+      btn.textContent = '...';
+      btn.disabled = true;
+      try {
+        const res = await fetch(form.action, {
+          method: 'POST',
+          body: new FormData(form),
+          headers: { Accept: 'application/json' },
+        });
+        if (res.ok) {
+          inp.value = '';
+          inp.placeholder = '✓  You\'re on the list!';
+          inp.style.color = '#6C63FF';
+          btn.textContent = '🎸';
+        } else {
+          btn.textContent = 'Retry';
+          btn.disabled = false;
+        }
+      } catch {
+        btn.textContent = 'Retry';
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
