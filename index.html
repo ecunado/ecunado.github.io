@@ -1051,6 +1051,7 @@
     let beat         = 0;
     let songIdx      = 0;
     let ticker       = null;
+    let nextTickTime = 0;
     const BEATS      = 4;
 
     // Elements
@@ -1103,14 +1104,23 @@
       });
     }
 
+    function scheduleTick() {
+      tick();
+      const interval = (60 / bpm) * 1000;
+      nextTickTime += interval;
+      const delay = Math.max(0, nextTickTime - performance.now());
+      ticker = setTimeout(scheduleTick, delay);
+    }
+
     function startTicker() {
-      clearInterval(ticker);
-      const ms = (60 / bpm) * 1000;
+      clearTimeout(ticker);
+      const interval = (60 / bpm) * 1000;
       beat = 0;
       hBpm.textContent  = bpm;
       pcBpm.textContent = bpm;
       tick();
-      ticker = setInterval(tick, ms);
+      nextTickTime = performance.now() + interval;
+      ticker = setTimeout(scheduleTick, interval);
     }
 
     function loadSong(idx) {
