@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Clicklist favicon — 512×512 internal canvas, scales to any size.
+  Uses SVG filters (feGaussianBlur) — works in all browsers.
+  For .ico / PNG variants: convert with ImageMagick or Squoosh.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+
+    <!-- Background gradient -->
+    <radialGradient id="bg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#0e0e1c"/>
+      <stop offset="60%"  stop-color="#07070f"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+
+    <!-- Outer atmospheric bloom -->
+    <filter id="f-wide" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="28"/>
+    </filter>
+
+    <!-- Mid corona -->
+    <filter id="f-mid" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="11"/>
+    </filter>
+
+    <!-- Tight penumbra -->
+    <filter id="f-tight" x="-16%" y="-16%" width="132%" height="132%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+
+    <!-- Immediate glow on the ring itself -->
+    <filter id="f-ring" x="-8%" y="-8%" width="116%" height="116%">
+      <feGaussianBlur stdDeviation="1.5"/>
+    </filter>
+
+  </defs>
+
+  <!-- Background — square for favicon, browsers clip to shape -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+
+  <!-- Glow layers — ring at r=173 (≈ 67.6 % of 256) -->
+  <circle cx="256" cy="256" r="173"
+    fill="none" stroke="#FF3D00" stroke-width="80"
+    opacity="0.035" filter="url(#f-wide)"/>
+
+  <circle cx="256" cy="256" r="173"
+    fill="none" stroke="#FF2040" stroke-width="40"
+    opacity="0.10" filter="url(#f-mid)"/>
+
+  <circle cx="256" cy="256" r="173"
+    fill="none" stroke="#FF1A6B" stroke-width="16"
+    opacity="0.30" filter="url(#f-tight)"/>
+
+  <circle cx="256" cy="256" r="173"
+    fill="none" stroke="#FF1A6B" stroke-width="6"
+    opacity="0.75" filter="url(#f-ring)"/>
+
+  <!-- Crisp ring -->
+  <circle cx="256" cy="256" r="173"
+    fill="none" stroke="#FFD0E4" stroke-width="1.5" opacity="0.90"/>
+
+</svg>
