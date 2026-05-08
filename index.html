@@ -865,11 +865,11 @@
 
     <div class="hero-inner">
       <span class="hero-now">▶ REHEARSING</span>
-      <h1 class="hero-song" id="hSong">HOLD THE LINE</h1>
-      <p class="hero-artist" id="hArtist">Toto</p>
+      <h1 class="hero-song" id="hSong">ONE HORSE TOWN</h1>
+      <p class="hero-artist" id="hArtist">Blackberry Smoke</p>
 
       <div class="beat-circle" id="circle">
-        <span class="bpm-number" id="hBpm">95</span>
+        <span class="bpm-number" id="hBpm">110</span>
         <span class="bpm-unit">BPM</span>
       </div>
 
@@ -979,14 +979,14 @@
     <div class="perf-visual">
       <div class="perf-card">
         <div class="pcard-count">1 / 16</div>
-        <div class="pcard-song" id="pcSong">HOLD THE LINE</div>
-        <div class="pcard-artist" id="pcArtist">Toto</div>
+        <div class="pcard-song" id="pcSong">ONE HORSE TOWN</div>
+        <div class="pcard-artist" id="pcArtist">Blackberry Smoke</div>
         <div class="pcard-next">
           <span class="nl">NEXT </span>
-          <span class="nt" id="pcNext">EYE OF THE TIGER</span>
+          <span class="nt" id="pcNext">CRY FOR YOU</span>
         </div>
         <div class="pcard-ring" id="pRing">
-          <span class="pcard-bpm" id="pcBpm">95</span>
+          <span class="pcard-bpm" id="pcBpm">110</span>
           <span class="pcard-bpm-u">BPM</span>
         </div>
         <div class="pcard-dots" id="pDots">
@@ -1045,14 +1045,17 @@
   <script>
     // ── Beat Engine ──────────────────────────────────────
     const SONGS = [
-      { title: 'HOLD THE LINE',      artist: 'Toto',             bpm: 95,  next: 'EYE OF THE TIGER' },
-      { title: 'EYE OF THE TIGER',   artist: 'Survivor',         bpm: 108, next: 'BEAT IT' },
-      { title: 'BEAT IT',            artist: 'Michael Jackson',  bpm: 136, next: "DON'T STOP BELIEVIN'" },
-      { title: "DON'T STOP BELIEVIN'", artist: 'Journey',        bpm: 118, next: 'SUMMER OF 69' },
-      { title: 'SUMMER OF 69',       artist: 'Bryan Adams',      bpm: 142, next: 'HOLD THE LINE' },
+      { title: 'ONE HORSE TOWN',           artist: 'Blackberry Smoke', bpm: 110, next: 'CRY FOR YOU' },
+      { title: 'CRY FOR YOU',              artist: 'Andy Timmons',     bpm: 147, next: 'STAY' },
+      { title: 'STAY',                     artist: 'Giant',            bpm: 122, next: 'ISOLATION' },
+      { title: 'ISOLATION',                artist: 'Toto',             bpm: 128, next: 'SENTIMENTAL BLVD.' },
+      { title: 'SENTIMENTAL BLVD.',        artist: 'Harem Scarem',     bpm: 112, next: 'GRAVITY' },
+      { title: 'GRAVITY',                  artist: 'John Mayer',       bpm: 115, next: 'STUPID BOY' },
+      { title: 'STUPID BOY',               artist: 'Keith Urban',      bpm: 73,  next: 'WHAT ARE YOU LISTENING TO?' },
+      { title: 'WHAT ARE YOU LISTENING TO?', artist: 'Chris Stapleton', bpm: 82, next: 'ONE HORSE TOWN' },
     ];
 
-    let bpm          = 95;
+    let bpm          = 110;
     let beat         = 0;
     let songIdx      = 0;
     let ticker       = null;
