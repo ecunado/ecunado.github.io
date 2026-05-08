@@ -817,12 +817,15 @@
       color: var(--border);
     }
 
-    .footer-v {
+    .footer-links a {
       font-family: 'Space Mono', monospace;
       font-size: 10px;
-      color: var(--border);
-      letter-spacing: 2px;
+      color: var(--muted);
+      letter-spacing: 1.5px;
+      text-decoration: none;
+      text-transform: uppercase;
     }
+    .footer-links a:hover { color: var(--text); }
 
     /* ── FADE-UP ON SCROLL ───────────────────────────── */
     .reveal {
@@ -1039,7 +1042,9 @@
   <!-- FOOTER -->
   <footer>
     <div class="footer-logo">CLICKLIST</div>
-    <div class="footer-v">v0.1.0 — MVP FOUNDATION · 2026</div>
+    <div class="footer-links">
+      <a href="/privacy.html">Privacy Policy</a>
+    </div>
   </footer>
 
   <script>
